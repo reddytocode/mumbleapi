@@ -16,3 +16,8 @@ six==1.15.0
 sqlparse==0.4.1
 urllib3==1.26.4
 whitenoise==5.2.0
+
+# linter
+black==20.8b1
+flake8==3.8.4
+isort==5.7.0
