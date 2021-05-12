@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import (Discussion,DiscussionComment,DiscussionVote)
+from .models import Discussion, DiscussionComment, DiscussionVote
 
 
 admin.site.register(Discussion)

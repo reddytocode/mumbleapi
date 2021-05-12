@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.response import Response 
+from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from django.db.models import Q
 from rest_framework import status
@@ -12,24 +12,26 @@ from .serializers import MumbleSerializer
 # Create your views here.
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes((IsAuthenticated,))
 def mumbles(request):
-    query = request.query_params.get('q')
+    query = request.query_params.get("q")
     if query == None:
-        query = ''
+        query = ""
 
     user = request.user
-    following = user.following.select_related('user')
+    following = user.following.select_related("user")
 
     following = user.following.all()
 
     ids = []
     ids = [i.user.id for i in following]
     ids.append(user.id)
-    #Make sure parent==None is always on
+    # Make sure parent==None is always on
     mumbles = Mumble.objects.filter(parent=None, user__id__in=ids)
-    mumbles = mumbles.filter(Q(user__userprofile__name__icontains=query) | Q(content__icontains=query))
+    mumbles = mumbles.filter(
+        Q(user__userprofile__name__icontains=query) | Q(content__icontains=query)
+    )
     paginator = PageNumberPagination()
     paginator.page_size = 10
     result_page = paginator.paginate_queryset(mumbles, request)
@@ -37,32 +39,30 @@ def mumbles(request):
     return paginator.get_paginated_response(serializer.data)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes((IsAuthenticated,))
 def createMumble(request):
     user = request.user
     data = request.data
 
-    isComment = data.get('isComment')
+    isComment = data.get("isComment")
     if isComment:
-        parent = Mumble.objects.get(id=data['postId'])
+        parent = Mumble.objects.get(id=data["postId"])
         mumble = Mumble.objects.create(
             parent=parent,
             user=user,
-            content=data['content'],
-            )
+            content=data["content"],
+        )
     else:
-        mumble = Mumble.objects.create(
-            user=user,
-            content=data['content']
-            )
+        mumble = Mumble.objects.create(user=user, content=data["content"])
 
     serializer = MumbleSerializer(mumble, many=False)
     return Response(serializer.data)
 
-@api_view(['PATCH'])
+
+@api_view(["PATCH"])
 @permission_classes((IsAuthenticated,))
-def editMumble(request,pk):
+def editMumble(request, pk):
     user = request.user
     data = request.data
 
@@ -71,16 +71,17 @@ def editMumble(request,pk):
         if user != mumble.user:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         else:
-            serializer = MumbleSerializer(mumble,data = data)
+            serializer = MumbleSerializer(mumble, data=data)
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data,status=status.HTTP_200_OK)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
     except Exception as e:
-        return Response(status=status.HTTP_204_NO_CONTENT)    
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['DELETE'])
+
+@api_view(["DELETE"])
 @permission_classes((IsAuthenticated,))
 def deleteMumble(request, pk):
     user = request.user
@@ -94,7 +95,8 @@ def deleteMumble(request, pk):
     except Exception as e:
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 def mumbleComments(request, pk):
     mumble = Mumble.objects.get(id=pk)
     comments = mumble.mumble_set.all()
@@ -102,12 +104,12 @@ def mumbleComments(request, pk):
     return Response(serializer.data)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes((IsAuthenticated,))
 def remumble(request):
     user = request.user
     data = request.data
-    originalMumble = Mumble.objects.get(id=data['id'])
+    originalMumble = Mumble.objects.get(id=data["id"])
 
     mumble = Mumble.objects.create(
         remumble=originalMumble,
@@ -117,26 +119,26 @@ def remumble(request):
     return Response(serializer.data)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes((IsAuthenticated,))
 def updateVote(request):
-    user = request.user 
+    user = request.user
     data = request.data
 
-    mumble = Mumble.objects.get(id=data['post_id'])
-    #What if user is trying to remove their vote?
+    mumble = Mumble.objects.get(id=data["post_id"])
+    # What if user is trying to remove their vote?
     vote, created = MumbleVote.objects.get_or_create(mumble=mumble, user=user)
 
-    if vote.value == data.get('value'):
-        #If same value is sent, user is clicking on vote to remove it
-        vote.delete() 
+    if vote.value == data.get("value"):
+        # If same value is sent, user is clicking on vote to remove it
+        vote.delete()
     else:
 
-        vote.value=data['value']
+        vote.value = data["value"]
         vote.save()
 
-    #We re-query the vote to get the latest vote rank value
-    mumble = Mumble.objects.get(id=data['post_id'])
+    # We re-query the vote to get the latest vote rank value
+    mumble = Mumble.objects.get(id=data["post_id"])
     serializer = MumbleSerializer(mumble, many=False)
 
     return Response(serializer.data)

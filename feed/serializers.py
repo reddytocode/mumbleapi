@@ -13,13 +13,12 @@ class MumbleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Mumble
-        fields = '__all__'
+        fields = "__all__"
 
     def get_user(self, obj):
         user = obj.user.userprofile
         serializer = UserProfileSerializer(user, many=False)
         return serializer.data
-
 
     def get_original_mumble(self, obj):
         original = obj.remumble
@@ -31,7 +30,9 @@ class MumbleSerializer(serializers.ModelSerializer):
 
     def get_upVoters(self, obj):
         # Returns list of users that upvoted post
-        voters = obj.votes.through.objects.filter(mumble=obj, value='upvote').values_list('user', flat=True)
+        voters = obj.votes.through.objects.filter(
+            mumble=obj, value="upvote"
+        ).values_list("user", flat=True)
 
         voter_objects = obj.votes.filter(id__in=voters)
         serializer = UserSerializer(voter_objects, many=True)
@@ -39,7 +40,9 @@ class MumbleSerializer(serializers.ModelSerializer):
 
     def get_downVoters(self, obj):
         # Returns list of users that upvoted post
-        voters = obj.votes.through.objects.filter(mumble=obj, value='downvote').values_list('user', flat=True)
+        voters = obj.votes.through.objects.filter(
+            mumble=obj, value="downvote"
+        ).values_list("user", flat=True)
 
         voter_objects = obj.votes.filter(id__in=voters)
         serializer = UserSerializer(voter_objects, many=True)

@@ -11,11 +11,11 @@ from .models import Notification
 from .serializers import NotificationSerializer
 
 
-@api_view(['PUT'])
+@api_view(["PUT"])
 @permission_classes((IsAuthenticated,))
 def readNotification(request, pk):
     try:
-        notification= Notification.objects.get(id=pk)
+        notification = Notification.objects.get(id=pk)
         if notification.to_user == request.user:
             notification.is_read = True
             notification.save()
@@ -27,13 +27,15 @@ def readNotification(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes((IsAuthenticated,))
 def getNotifications(request):
-    is_read = request.query_params.get('is_read')
+    is_read = request.query_params.get("is_read")
     if is_read == None:
-        notifications = request.user.notifications.order_by('-created')
+        notifications = request.user.notifications.order_by("-created")
     else:
-        notifications = request.user.notifications.filter(is_read=is_read).order_by('-created')
+        notifications = request.user.notifications.filter(is_read=is_read).order_by(
+            "-created"
+        )
     serializer = NotificationSerializer(notifications, many=True)
     return Response(serializer.data)

@@ -10,43 +10,46 @@ from .models import Notification
 
 
 def articleCreated(sender, instance, created, **kwargs):
-    if not created: return
+    if not created:
+        return
     followers = instance.user.userprofile.followers.all()
     for follower in followers:
         notification = Notification.objects.create(
             to_user=follower,
             created_by=instance.user,
-            notification_type='article',
+            notification_type="article",
             content_id=instance.id,
-            content=f"An article named {instance.title} was created by {instance.user.userprofile.name}."
+            content=f"An article named {instance.title} was created by {instance.user.userprofile.name}.",
         )
 
 
 def mumbleCreated(sender, instance, created, **kwargs):
-    if not created: return
+    if not created:
+        return
     followers = instance.user.userprofile.followers.all()
     for follower in followers:
         notification = Notification.objects.create(
             to_user=follower,
             created_by=instance.user,
-            notification_type='mumble',
+            notification_type="mumble",
             content_id=instance.id,
-            content=f"A mumble mentioning {instance.user.userprofile.name} was created."
+            content=f"A mumble mentioning {instance.user.userprofile.name} was created.",
         )
-
 
 
 def discussionCreated(sender, instance, created, **kwargs):
-    if not created: return
+    if not created:
+        return
     followers = instance.user.userprofile.followers.all()
     for follower in followers:
         notification = Notification.objects.create(
             to_user=follower,
             created_by=instance.user,
-            notification_type='discussion',
+            notification_type="discussion",
             content_id=instance.id,
-            content=f"A discussion was started by {instance.user.userprofile.name}."
+            content=f"A discussion was started by {instance.user.userprofile.name}.",
         )
+
 
 post_save.connect(articleCreated, sender=Article)
 post_save.connect(mumbleCreated, sender=Mumble)

@@ -2,8 +2,10 @@ import datetime
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
-#email verification imports
+
+# email verification imports
 from django.contrib.auth.tokens import default_token_generator
+
 # from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
 from django.db.models import Q
@@ -26,10 +28,10 @@ from notification.models import Notification
 from notification.serializers import NotificationSerializer
 
 from .models import UserProfile
-from .serializers import (UserProfileSerializer, UserSerializer,
-                        UserSerializerWithToken)
+from .serializers import UserProfileSerializer, UserSerializer, UserSerializerWithToken
 
 # Create your views here.
+
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -38,24 +40,24 @@ class RegisterView(APIView):
     def post(self, request):
         data = request.data
         user = User.objects.create(
-            username=data['username'],
-            email=data['email'],
-            password=make_password(data['password'])
+            username=data["username"],
+            email=data["email"],
+            password=make_password(data["password"]),
         )
         serializer = UserSerializerWithToken(user, many=False)
         return Response(serializer.data)
 
+
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
 
-        token['username'] = user.username
-        token['name'] = user.userprofile.name
-        token['profile_pic'] = 'static' + user.userprofile.profile_pic.url
-        token['is_staff'] = user.is_staff
-        token['id'] = user.id
+        token["username"] = user.username
+        token["name"] = user.userprofile.name
+        token["profile_pic"] = "static" + user.userprofile.profile_pic.url
+        token["is_staff"] = user.is_staff
+        token["id"] = user.id
 
         return token
 
@@ -73,14 +75,14 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 def registerUser(request):
     data = request.data
-    #try:
+    # try:
     user = User.objects.create(
-        username=data['username'],
-        email=data['email'],
-        password=make_password(data['password'])
+        username=data["username"],
+        email=data["email"],
+        password=make_password(data["password"]),
     )
 
     serializer = UserSerializerWithToken(user, many=False)
@@ -90,18 +92,21 @@ def registerUser(request):
     #     return Response(message, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def users(request):
-    query = request.query_params.get('q')
+    query = request.query_params.get("q")
     if query == None:
-        query = ''
+        query = ""
 
-    users = User.objects.filter(Q(userprofile__name__icontains=query) | Q(userprofile__username__icontains=query))
+    users = User.objects.filter(
+        Q(userprofile__name__icontains=query)
+        | Q(userprofile__username__icontains=query)
+    )
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes((IsAuthenticated,))
 def usersRecommended(request):
     user = request.user
@@ -109,41 +114,45 @@ def usersRecommended(request):
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 def user(request, username):
     user = User.objects.get(username=username)
     serializer = UserSerializer(user, many=False)
     return Response(serializer.data)
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 def userMumbles(request, username):
     user = User.objects.get(username=username)
     mumbles = user.mumble_set.filter(parent=None)
     serializer = MumbleSerializer(mumbles, many=True)
     return Response(serializer.data)
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 def userArticles(request, username):
     user = User.objects.get(username=username)
     articles = user.article_set
     serializer = ArticleSerializer(articles, many=True)
     return Response(serializer.data)
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes((IsAuthenticated,))
 def followUser(request, username):
     userWantingToFollowSomeone = request.user
     userToFollow = User.objects.get(username=username)
     userToFollowProfile = userToFollow.userprofile
 
-    if userWantingToFollowSomeone == userToFollow: 
-        return Response('You can not follow yourself')
-        
+    if userWantingToFollowSomeone == userToFollow:
+        return Response("You can not follow yourself")
+
     if userWantingToFollowSomeone in userToFollowProfile.followers.all():
         userToFollowProfile.followers.remove(userWantingToFollowSomeone)
-        userToFollowProfile.followers_count =  userToFollowProfile.followers.count()
+        userToFollowProfile.followers_count = userToFollowProfile.followers.count()
         userToFollowProfile.save()
-        return Response('User unfollowed')
+        return Response("User unfollowed")
     else:
         userToFollowProfile.followers.add(userWantingToFollowSomeone)
         userToFollowProfile.followers_count = userToFollowProfile.followers.count()
@@ -152,28 +161,31 @@ def followUser(request, username):
         Notification.objects.create(
             to_user=userToFollow,
             created_by=userWantingToFollowSomeone,
-            notification_type='follow',
+            notification_type="follow",
             content_id=userWantingToFollowSomeone.id,
-            content=f"{userWantingToFollowSomeone.userprofile.name} started following you."
+            content=f"{userWantingToFollowSomeone.userprofile.name} started following you.",
         )
-        return Response('User followed')
+        return Response("User followed")
 
 
 class UserProfileUpdate(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer
-    #http_method_names = ['patch', 'head']
-
+    # http_method_names = ['patch', 'head']
 
     def patch(self, *args, **kwargs):
         profile = self.request.user.userprofile
         serializer = self.serializer_class(
-            profile, data=self.request.data, partial=True)
+            profile, data=self.request.data, partial=True
+        )
         if serializer.is_valid():
             user = serializer.save().user
-            
-            response = {'success': True, 'message': 'successfully updated your info',
-                        'user': UserSerializer(user).data}
+
+            response = {
+                "success": True,
+                "message": "successfully updated your info",
+                "user": UserSerializer(user).data,
+            }
             return Response(response, status=200)
         else:
             response = serializer.errors
@@ -181,58 +193,67 @@ class UserProfileUpdate(APIView):
 
 
 class ProfilePictureUpdate(APIView):
-    permission_classes=[IsAuthenticated]
-    serializer_class=UserProfileSerializer
-    parser_class=(FileUploadParser,)
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
+    parser_class = (FileUploadParser,)
 
     def patch(self, *args, **kwargs):
-    
-        profile_pic=self.request.FILES['profile_pic']
-        profile_pic.name='{}.png'.format(self.request.user.id)
-        serializer=self.serializer_class(
-            self.request.user.profile, data=self.request.data, partial=True)
+
+        profile_pic = self.request.FILES["profile_pic"]
+        profile_pic.name = "{}.png".format(self.request.user.id)
+        serializer = self.serializer_class(
+            self.request.user.profile, data=self.request.data, partial=True
+        )
         if serializer.is_valid():
-            serializer.profile_pic.name=datetime.datetime.now()
-            user=serializer.save().user
-            response={'type': 'Success', 'message': 'successfully updated your info',
-                        'user': UserSerializer(user).data}
+            serializer.profile_pic.name = datetime.datetime.now()
+            user = serializer.save().user
+            response = {
+                "type": "Success",
+                "message": "successfully updated your info",
+                "user": UserSerializer(user).data,
+            }
         else:
-            response=serializer.errors
+            response = serializer.errors
         return Response(response)
+
 
 # THIS EMAIL VERIFICATION SYSTEM IS ONLY VALID FOR LOCAL TESTING
 # IN PRODUCTION WE NEED A REAL EMAIL , TILL NOW WE ARE USING DEFAULT EMAIL BACKEND
-# THIS DEFAULT BACKEND WILL PRINT THE VERIFICATION EMAIL IN THE CONSOLE 
+# THIS DEFAULT BACKEND WILL PRINT THE VERIFICATION EMAIL IN THE CONSOLE
 # LATER WE CAN SETUP SMTP FOR REAL EMAIL SENDING TO USER
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes((IsAuthenticated,))
 def sendActivationEmail(request):
     user = request.user
     user_profile = UserProfile.objects.get(user=user)
     try:
-        mail_subject = 'Verify your Mumble account.'
-        message = render_to_string('verify-email.html', {
-            'user': user_profile,
-            'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-            'token': default_token_generator.make_token(user),
-        })
-        to_email = user.email
-        email = EmailMessage(
-            mail_subject, message, to=[to_email]
+        mail_subject = "Verify your Mumble account."
+        message = render_to_string(
+            "verify-email.html",
+            {
+                "user": user_profile,
+                "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+                "token": default_token_generator.make_token(user),
+            },
         )
+        to_email = user.email
+        email = EmailMessage(mail_subject, message, to=[to_email])
         email.send()
-        return Response('Mail sent Successfully',status=status.HTTP_200_OK)
+        return Response("Mail sent Successfully", status=status.HTTP_200_OK)
     except Exception as e:
-        return Response('Something went wrong , please try again',status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            "Something went wrong , please try again", status=status.HTTP_403_FORBIDDEN
+        )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def activate(request, uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = User._default_manager.get(pk=uid)
-    except(TypeError, ValueError, OverflowError, User.DoesNotExist):
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
     if user is not None and default_token_generator.check_token(user, token):
         user_profile = UserProfile.objects.get(user=user)
@@ -240,23 +261,29 @@ def activate(request, uidb64, token):
         user_profile.save()
         return Response("Email Verified")
     else:
-        return Response('Something went wrong , please try again',status=status.HTTP_406_NOT_ACCEPTABLE)
+        return Response(
+            "Something went wrong , please try again",
+            status=status.HTTP_406_NOT_ACCEPTABLE,
+        )
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes((IsAuthenticated,))
 def passwordChange(request):
     user = request.user
     data = request.data
-    new_password = data.get('new_password')
-    new_password_confirm = data.get('new_password_confirm')
+    new_password = data.get("new_password")
+    new_password_confirm = data.get("new_password_confirm")
     if new_password_confirm and new_password is not None:
         if new_password == new_password_confirm:
             user.set_password(new_password)
             user.save()
-            return Response({'detail':'Password changed successfully'},status=status.HTTP_200_OK)
+            return Response(
+                {"detail": "Password changed successfully"}, status=status.HTTP_200_OK
+            )
         else:
-            return Response({"detail":'Password doesn\'t match'})
+            return Response({"detail": "Password doesn't match"})
     elif new_password is None:
-        return Response({'detail':'New password field required'})
+        return Response({"detail": "New password field required"})
     elif new_password_confirm is None:
-        return Response({'detail':'New password confirm field required'})
+        return Response({"detail": "New password confirm field required"})
